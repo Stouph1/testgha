@@ -11,17 +11,19 @@ on:
 jobs:
   lint:
     runs-on: ubuntu-latest 
+    
+    services:
+      docker:
+        image: docker:19.03.12
+        options: --privileged
+    
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/setup-python@v2
-    - run: pip install ruff
-    - run: | 
-        ruff check .
-        ruff fix .
-    - uses: stefanzweifel/git-auto-commit-action@v4
-      with:
-        commit_message: 'style fixes by ruff'
-
+    - name: Checkout code
+      uses: actions/checkout@v2
+      
+    - name: Lint with Python
+      run: |
+        docker run --rm -v $(pwd):/code -w /code python:3.9 bash -c "pip install flake8 && flake8 ."
 
 # jobs:
 #   super-lint:
