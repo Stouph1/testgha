@@ -1,58 +1,166 @@
-name: ci
+# name: ci
+name: CI Pipeline
 
-on: 
+on:
   push:
-    branches:
-      - main 
-      - "*"
-  
+    branches: [ '**' ]  # This will trigger the workflow on push to any branch
+  pull_request:
+    branches: [ '**' ]  # This will trigger the workflow on pull requests to any branch
+
 jobs:
-  super-lint:
-    name: Lint code base
+  linters:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+    - uses: actions/checkout@v2
 
-      - name: Run Super-Linter
-        uses: github/super-linter@v4
-        env:
-          DEFAULT_BRANCH: main
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Run black
+      uses: docker://pyfound/black:latest
+      with:
+        args: --check .
 
+    - name: Run ruff
+      uses: docker://astral-sh/ruff:0.2.1
+      with:
+        args: .
 
-
-  Build_test:
+  tests:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["pypy3.9", "pypy3.10", "3.9", "3.10", "3.11", "3.12"]
-
     steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python-version }}
-      # You can test your matrix by printing the current Python version
-      - name: Display Python version
-        run: python -c "import sys; print(sys.version)"
+    - uses: actions/checkout@v2
 
-      - name: install dependencies
-        run: python -m pip install --upgrade pip setuptools wheel
+    - name: Run tests with pytest and coverage
+      uses: docker://python:3.8
+      with:
+        entrypoint: /bin/sh
+        args: |
+              - -c
+              - |
+                pip install pytest pytest-cov
+                pytest --cov=my_package --cov-report=term-missing --cov-fail-under=80
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Build Docker Image
+      run: |
+        docker build -t my-python-app .
+
+  # deploy:
+  #   if: github.ref == 'refs/heads/main'  # This job runs only if the push is to the main branch
+  #   needs: build
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #   - uses: actions/checkout@v2
+
+  #   - name: Configure AWS credentials
+  #     uses: aws-actions/configure-aws-credentials@v1
+  #     with:
+  #       aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  #       aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  #       aws-region: ${{ secrets.AWS_REGION }}
+
+  #   - name: Login to Amazon ECR
+  #     id: login-ecr
+  #     uses: aws-actions/amazon-ecr-login@v1
+
+  #   - name: Tag Docker Image
+  #     run: |
+  #       docker tag my-python-app:latest ${{ steps.login-ecr.outputs.registry }}/my-python-app:latest
+
+  #   - name: Push Docker Image to Amazon ECR
+  #     run: |
+  #       docker push ${{ steps.login-ecr.outputs.registry }}/my-python-app:latest
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# on: 
+#   push:
+#     branches:
+#       - main 
+#       - "*"
+  
+# jobs:
+#   super-lint:
+#     name: Lint code base
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v2
+
+#       - name: Run Super-Linter
+#         uses: github/super-linter@v4
+#         env:
+#           DEFAULT_BRANCH: main
+#           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+
+
+#   Build_test:
+#     runs-on: ubuntu-latest
+#     strategy:
+#       matrix:
+#         python-version: ["pypy3.9", "pypy3.10", "3.9", "3.10", "3.11", "3.12"]
+
+#     steps:
+#       - uses: actions/checkout@v4
+#       - name: Set up Python ${{ matrix.python-version }}
+#         uses: actions/setup-python@v4
+#         with:
+#           python-version: ${{ matrix.python-version }}
+#       # You can test your matrix by printing the current Python version
+#       - name: Display Python version
+#         run: python -c "import sys; print(sys.version)"
+
+#       - name: install dependencies
+#         run: python -m pip install --upgrade pip setuptools wheel
  
       
-      - name: Test with pytest
-        run: |
-          pip install pytest pytest-cov
-          pytest main.py --doctest-modules --junitxml=junit/test-results-${{ matrix.python-version }}.xml --cov=com --cov-report=xml --cov-report=html
-      - name: Upload pytest test results
-        uses: actions/upload-artifact@v4
-        with:
-          name: pytest-results-${{ matrix.python-version }}
-          path: junit/test-results-${{ matrix.python-version }}.xml
-        # Use always() to always run this step to publish test results when there are test failures
-        if: ${{ always() }}
+#       - name: Test with pytest
+#         run: |
+#           pip install pytest pytest-cov
+#           pytest main.py --doctest-modules --junitxml=junit/test-results-${{ matrix.python-version }}.xml --cov=com --cov-report=xml --cov-report=html
+#       - name: Upload pytest test results
+#         uses: actions/upload-artifact@v4
+#         with:
+#           name: pytest-results-${{ matrix.python-version }}
+#           path: junit/test-results-${{ matrix.python-version }}.xml
+#         # Use always() to always run this step to publish test results when there are test failures
+#         if: ${{ always() }}
   
    
   
