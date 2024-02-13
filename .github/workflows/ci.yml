@@ -25,6 +25,21 @@ jobs:
       run: |
         docker run --rm -v $(pwd):/code -w /code python:3.9 bash -c "pip install flake8 black && black . && flake8 . --exclude=.git,__pycache__"
 
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Run tests with pytest and coverage
+      uses: docker://python:3.8
+      with:
+        entrypoint: /bin/sh
+        args: |
+          - -c
+          - |
+            pip install pytest pytest-cov
+            pytest --cov=my_package --cov-report=term-missing --cov-fail-under=80
+
 # jobs:
 #   super-lint:
 #     name: Lint code base
