@@ -21,9 +21,9 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v2
       
-    - name: Lint with Python
+    - name: Lint with Black and Flake8
       run: |
-        docker run --rm -v $(pwd):/code -w /code python:3.9 bash -c "pip install flake8 && flake8 ."
+        docker run --rm -v $(pwd):/code -w /code python:3.9 bash -c "pip install flake8 black && black . && flake8 . --exclude=.git,__pycache__"
 
 # jobs:
 #   super-lint:
