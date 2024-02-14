@@ -1,0 +1,22 @@
+name: manual-input
+
+on:
+  workflow_dispatch:
+
+    inputs:
+      name:
+
+        description: 'Présente-toi'
+
+        default: 'nom'
+
+        required: true
+
+jobs:
+
+  greet:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send greeting
+        run: echo "Hello ${{ github.event.inputs.name }}"
+        
